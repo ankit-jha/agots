@@ -45,7 +45,7 @@ class MultivariateDataGenerator:
             self.K = 1
 
     def generate_baseline(self, correlation_min=0.9, correlation_max=0.7, initial_value_min=INITIAL_VALUE_MIN,
-                          initial_value_max=INITIAL_VALUE_MAX):
+                          initial_value_max=INITIAL_VALUE_MAX,noise=True):
         """
         Generate the multivariate data frame
         :param correlation_min: how much the k columns should at least correlate with the first one
@@ -59,7 +59,7 @@ class MultivariateDataGenerator:
 
         df = self.init_dataframe(self.N)
         # Create k correlating time series
-        df = self.create_correlating_time_series(self.K, correlation_min, df, initial_value_min, initial_value_max)
+        df = self.create_correlating_time_series(self.K, correlation_min, df, initial_value_min, initial_value_max,noise=noise)
 
         # Create the remaining n - k time series randomly
         df = self.create_not_correlating_time_series(self.K, self.N, correlation_max, df, initial_value_min,
@@ -86,7 +86,7 @@ class MultivariateDataGenerator:
         df = pd.DataFrame(columns=columns)
         return df
 
-    def create_basic_time_series(self, df, initial_value_min=INITIAL_VALUE_MIN, initial_value_max=INITIAL_VALUE_MAX):
+    def create_basic_time_series(self, df, initial_value_min=INITIAL_VALUE_MIN, initial_value_max=INITIAL_VALUE_MAX,noise=True):
         if initial_value_min != initial_value_max:
             start = np.random.randint(initial_value_min, initial_value_max)
         else:
@@ -100,7 +100,8 @@ class MultivariateDataGenerator:
         timestamps = [0]
         for i in range(1, self.STREAM_LENGTH + self.max_shift):
             timestamps.append(i)
-            value = x[i - 1] + np.random.normal(0, 1)
+            value = x[i - 1]
+            if noise: value += np.random.normal(0, 1)
             if self.behavior is not None:
                 value += next(behavior_generator)
             x.append(value)
@@ -111,10 +112,10 @@ class MultivariateDataGenerator:
 
     def create_correlating_time_series(self, number_time_series, correlation_min, df,
                                        initial_value_min=INITIAL_VALUE_MIN,
-                                       initial_value_max=INITIAL_VALUE_MAX):
+                                       initial_value_max=INITIAL_VALUE_MAX,noise=True):
         # First time series
         df = self.create_basic_time_series(df=df, initial_value_min=initial_value_min,
-                                           initial_value_max=initial_value_max)
+                                           initial_value_max=initial_value_max,noise=noise)
         origin_offset = df.iloc[0, 0]
 
         # number_time_series time series which are correlating
